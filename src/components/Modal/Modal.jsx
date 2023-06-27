@@ -1,41 +1,39 @@
-import React, { Component } from 'react';
+import { useEffect } from 'react';
 import PropTypes from 'prop-types';
+import { createPortal } from 'react-dom';
 
 import { Overlay, Window } from './Modal.styled';
-import { createPortal } from 'react-dom';
 
 const modalRoot = document.querySelector('#modal-root');
 
-class Modal extends Component {
-  componentDidMount() {
-    window.addEventListener('keydown', this.onEscPush);
-  }
+const Modal = ({ toggle, children }) => {
+  useEffect(() => {
+    window.addEventListener('keydown', onEscPush);
 
-  componentWillUnmount() {
-    window.removeEventListener('keydown', this.onEscPush);
-  }
+    return () => {
+      window.removeEventListener('keydown', onEscPush);
+    };
+  }, []);
 
-  onEscPush = e => {
+  const onEscPush = e => {
     if (e.code === 'Escape') {
-      this.props.toggle();
+      toggle();
     }
   };
 
-  handleOverlayClick = e => {
+  const handleOverlayClick = e => {
     if (e.target === e.currentTarget) {
-      this.props.toggle();
+      toggle();
     }
   };
 
-  render() {
-    return createPortal(
-      <Overlay onClick={this.handleOverlayClick}>
-        <Window>{this.props.children}</Window>
-      </Overlay>,
-      modalRoot
-    );
-  }
-}
+  return createPortal(
+    <Overlay onClick={handleOverlayClick}>
+      <Window>{children}</Window>
+    </Overlay>,
+    modalRoot
+  );
+};
 
 Modal.propTypes = {
   toggle: PropTypes.func.isRequired,
