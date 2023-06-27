@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
-import PropTypes from 'prop-types';
 import { createPortal } from 'react-dom';
+import PropTypes from 'prop-types';
 
 import { Overlay, Window } from './Modal.styled';
 
