@@ -8,18 +8,18 @@ const modalRoot = document.querySelector('#modal-root');
 
 const Modal = ({ toggle, children }) => {
   useEffect(() => {
+    const onEscPush = e => {
+      if (e.code === 'Escape') {
+        toggle();
+      }
+    };
+
     window.addEventListener('keydown', onEscPush);
 
     return () => {
       window.removeEventListener('keydown', onEscPush);
     };
-  }, []);
-
-  const onEscPush = e => {
-    if (e.code === 'Escape') {
-      toggle();
-    }
-  };
+  }, [toggle]);
 
   const handleOverlayClick = e => {
     if (e.target === e.currentTarget) {
