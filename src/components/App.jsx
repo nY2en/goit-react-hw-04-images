@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Notiflix from 'notiflix';
 
 import * as api from '../services/api';
@@ -9,126 +9,125 @@ import Button from 'components/Button';
 import Loader from 'components/Loader';
 import Modal from 'components/Modal';
 
-export class App extends Component {
-  state = {
-    query: '',
-    data: [],
-    status: 'idle',
-    page: 1,
-    id: 0,
-    isOpen: false,
-    limitOfCollection: false,
-  };
+const App = () => {
+  const [query, setQuery] = useState('');
+  const [data, setData] = useState([]);
+  const [status, setStatus] = useState('idle');
+  const [page, setPage] = useState(0);
+  const [id, setId] = useState(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [limitOfCollection, setLimitOfCollection] = useState(false);
+  const [error, setError] = useState(false);
+  const isFirstRender = useRef(true);
 
-  componentDidUpdate(prevProps, prevState) {
-    const { query, page } = this.state;
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
 
-    if (query !== prevState.query) {
-      this.setState({
-        data: [],
-        status: 'idle',
-        limitOfCollection: false,
+    setStatus('pending');
+
+    try {
+      api.getPictures(query, page).then(pictures => {
+        if (pictures.hits.length === 0 && page === 1) {
+          setStatus('idle');
+
+          Notiflix.Notify.failure('There is nothing been found');
+
+          Promise.reject(new Error('There is nothing been found'));
+
+          return;
+        }
+
+        setData(prevData => [...prevData, ...pictures.hits]);
+
+        if (pictures.hits.length < 12) {
+          setStatus('resolved');
+
+          setLimitOfCollection(true);
+
+          Notiflix.Notify.warning('limit of the collection');
+
+          return;
+        }
+
+        setStatus('resolved');
+
+        Notiflix.Notify.success('WE FOUND PICS');
       });
+    } catch (error) {
+      setError(true);
+    }
+  }, [page, query]);
+
+  useEffect(() => {
+    if (!query) {
+      return;
     }
 
-    if (page !== prevState.page || query !== prevState.query) {
-      this.setState({ status: 'pending' });
+    setData([]);
+    setStatus('idle');
+    setPage(1);
+    setLimitOfCollection(false);
+  }, [query]);
 
-      try {
-        api.getPictures(query, page).then(pictures => {
-          if (pictures.hits.length === 0 && page !== 1) {
-            this.setState({
-              status: 'resolved',
-              limitOfCollection: true,
-            });
-
-            Notiflix.Notify.warning('limit of the collection');
-
-            return;
-          }
-
-          if (pictures.hits.length === 0 && page === 1) {
-            this.setState({ status: 'idle', query });
-
-            Notiflix.Notify.failure('There is nothing been found');
-
-            Promise.reject(new Error('There is nothing been found'));
-
-            return;
-          }
-
-          if (pictures.hits.length < 12) {
-            this.setState({ limitOfCollection: true });
-          }
-
-          this.setState(prevState => ({
-            data: [...prevState.data, ...pictures.hits],
-            status: 'resolved',
-          }));
-
-          Notiflix.Notify.success('WE FOUND PICS');
-        });
-      } catch (error) {
-        console.log(error);
-      }
-    }
-  }
-
-  submitDataForm = query => {
-    this.setState({ query, page: 1 });
+  const submitDataForm = query => {
+    setQuery(query);
+    setPage(1);
   };
 
-  handleBtnClick = () => {
-    this.setState(prevState => ({ page: prevState.page + 1 }));
+  const handleBtnClick = () => {
+    setPage(prevState => prevState + 1);
   };
 
-  handleCardClick = cardId => {
-    this.setState({
-      id: cardId,
-    });
+  const handleCardClick = cardId => {
+    setId(cardId);
 
-    this.toggleModal();
+    toggleModal();
   };
 
-  toggleModal = () => {
-    this.setState(prevState => ({
-      isOpen: !prevState.isOpen,
-    }));
+  const toggleModal = () => {
+    setIsOpen(prevState => !prevState);
   };
 
-  findBigPic = data => data.filter(({ id }) => id === this.state.id);
+  const findBigPic = data => data.filter(el => el.id === id);
 
-  createMarkupBigPic = data =>
+  const createMarkupBigPic = data =>
     data.map(({ id, largeImageURL, tags }) => (
       <img key={id} src={largeImageURL} alt={tags} />
     ));
 
-  render() {
-    const { data, status, isOpen, limitOfCollection } = this.state;
-
-    if (status === 'idle') {
-      return <Searchbar onSubmit={this.submitDataForm} />;
-    }
-
-    if (status === 'resolved' || 'pending') {
-      return (
-        <>
-          <Searchbar onSubmit={this.submitDataForm} />
-          <ImageGallery>
-            <ImageGalleryItem data={data} onCardClick={this.handleCardClick} />
-          </ImageGallery>
-          {status === 'pending' && <Loader />}
-          {status === 'resolved' && limitOfCollection === false && (
-            <Button onBtnClick={this.handleBtnClick} />
-          )}
-
-          {isOpen && (
-            <Modal toggle={this.toggleModal}>
-              {this.createMarkupBigPic(this.findBigPic(data))}
-            </Modal>
-          )}
-        </>
-      );
-    }
+  if (status === 'idle') {
+    return <Searchbar onSubmit={submitDataForm} />;
   }
-}
+
+  if (status === 'resolved' || 'pending') {
+    return (
+      <>
+        {error ? (
+          Notiflix.Notify.failure('There is nothing been found')
+        ) : (
+          <>
+            <Searchbar onSubmit={submitDataForm} />
+            <ImageGallery>
+              <ImageGalleryItem data={data} onCardClick={handleCardClick} />
+            </ImageGallery>
+            {status === 'pending' && <Loader />}
+            {status === 'resolved' && limitOfCollection === false && (
+              <Button onBtnClick={handleBtnClick} />
+            )}
+
+            {isOpen && (
+              <Modal toggle={toggleModal}>
+                {createMarkupBigPic(findBigPic(data))}
+              </Modal>
+            )}
+          </>
+        )}
+      </>
+    );
+  }
+};
+
+export default App;
