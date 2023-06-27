@@ -4,7 +4,6 @@ import Notiflix from 'notiflix';
 import * as api from '../services/api';
 import Searchbar from 'components/Searchbar';
 import ImageGallery from 'components/ImageGallery';
-import ImageGalleryItem from 'components/ImageGalleryItem';
 import Button from 'components/Button';
 import Loader from 'components/Loader';
 
@@ -88,7 +87,7 @@ const App = () => {
         ) : (
           <>
             <Searchbar onSubmit={submitDataForm} />
-            <ImageGallery data={data}></ImageGallery>
+            <ImageGallery data={data} />
             {status === 'pending' && <Loader />}
             {status === 'resolved' && limitOfCollection === false && (
               <Button onBtnClick={handleBtnClick} />
