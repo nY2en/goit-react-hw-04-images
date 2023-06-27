@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Notiflix from 'notiflix';
 
 import * as api from '../services/api';
@@ -7,22 +7,17 @@ import ImageGallery from 'components/ImageGallery';
 import ImageGalleryItem from 'components/ImageGalleryItem';
 import Button from 'components/Button';
 import Loader from 'components/Loader';
-import Modal from 'components/Modal';
 
 const App = () => {
   const [query, setQuery] = useState('');
   const [data, setData] = useState([]);
   const [status, setStatus] = useState('idle');
   const [page, setPage] = useState(0);
-  const [id, setId] = useState(null);
-  const [isOpen, setIsOpen] = useState(false);
   const [limitOfCollection, setLimitOfCollection] = useState(false);
   const [error, setError] = useState(false);
-  const isFirstRender = useRef(true);
 
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
+    if (!query) {
       return;
     }
 
@@ -81,23 +76,6 @@ const App = () => {
     setPage(prevState => prevState + 1);
   };
 
-  const handleCardClick = cardId => {
-    setId(cardId);
-
-    toggleModal();
-  };
-
-  const toggleModal = () => {
-    setIsOpen(prevState => !prevState);
-  };
-
-  const findBigPic = data => data.filter(el => el.id === id);
-
-  const createMarkupBigPic = data =>
-    data.map(({ id, largeImageURL, tags }) => (
-      <img key={id} src={largeImageURL} alt={tags} />
-    ));
-
   if (status === 'idle') {
     return <Searchbar onSubmit={submitDataForm} />;
   }
@@ -110,18 +88,10 @@ const App = () => {
         ) : (
           <>
             <Searchbar onSubmit={submitDataForm} />
-            <ImageGallery>
-              <ImageGalleryItem data={data} onCardClick={handleCardClick} />
-            </ImageGallery>
+            <ImageGallery data={data}></ImageGallery>
             {status === 'pending' && <Loader />}
             {status === 'resolved' && limitOfCollection === false && (
               <Button onBtnClick={handleBtnClick} />
-            )}
-
-            {isOpen && (
-              <Modal toggle={toggleModal}>
-                {createMarkupBigPic(findBigPic(data))}
-              </Modal>
             )}
           </>
         )}
